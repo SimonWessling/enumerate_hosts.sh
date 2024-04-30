@@ -72,7 +72,7 @@ for i in 00 01 02 03 04; do
 		printf "${COLOR_RED}%s${COLOR_END}\n" "Wordlist not found: $wordlist. Did you run setup.sh?" # dnsx doesn't throw an error if file is not found, need to check explicitly
 		exit -1
 	fi
-	#dnsx -silent -resolver 8.8.8.8,8.8.4.4 -retry 3 -a -d "$TARGET" -w "$wordlist" | tee -a ~/$TARGET/dnsx-bruteforce/from_best-dns-wordlist.txt
+	dnsx -silent -resolver 8.8.8.8,8.8.4.4 -retry 3 -a -d "$TARGET" -w "$wordlist" | tee -a ~/$TARGET/dnsx-bruteforce/from_best-dns-wordlist.txt
 	printf "${COLOR_END}"
 done
 
