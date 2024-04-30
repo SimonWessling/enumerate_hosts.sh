@@ -45,7 +45,7 @@ def filter_IPs_from_file(ip_input_filepath, ips_in_scope):
         in_scope_IPs = []
         out_of_scope_IPs = []
         known_IPs = f_input_IPs.readlines()
-        logging.debug(f"Known IPs: {known_IPs}")
+        logging.debug(f"Known IPs{' (truncated)' if len(known_IPs) > 20 else ''}: {known_IPs[:20]}")
         for known_IP in known_IPs:
             known_IP = known_IP.strip()
             if known_IP in ips_in_scope:
@@ -101,7 +101,13 @@ if __name__ == "__main__":
     ### Get CIDR file, validate CIDRs and create a file of CIDRs inside the project directory (i.e. "copy" to project)
     if is_iterative_run:
         cidr_input_file_path = project_cidr_file_path
-        known_IPs_input_file_path = project_inscope_IPs_file_path
+        # use the known IPs from a previous run if it exists
+        logging.debug(f"Looking for file of known IPs ({os.path.basename(known_and_filtered_IPs_output_file_path)})")
+        if os.path.isfile(known_and_filtered_IPs_output_file_path):
+            known_IPs_input_file_path = known_and_filtered_IPs_output_file_path
+        else:
+            logging.info(f"No file with known IPs found.")
+            known_IPs_input_file_path = ""
     else:
         cidr_input_file_path = input("Path to file containing CIDRs in scope: ")
         cidr_input_file_path = os.path.realpath(os.path.expanduser(cidr_input_file_path))
@@ -133,6 +139,7 @@ if __name__ == "__main__":
                          f"{len(out_of_scope_IPs)} IPs were provided but out-of-scope: {out_of_scope_IPs}")
     
     ### Write amass config
+    logging.debug(f"Writing amass config to {args.DIRECTORY}/amass")
     with open(os.path.join(args.DIRECTORY, "amass", "config.yml"), "w") as f_amass:
         f_amass.write(f"scope:\n")
         f_amass.write(f"    ips:\n")
