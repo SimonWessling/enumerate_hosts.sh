@@ -37,11 +37,12 @@ def cidr_test(cidr_a, cidr_b):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test if a given IP is in the given CIDR range. Echoes back the IP if it is in the CIDR range, does nothing if not.")
-    # CLI mode
     parser.add_argument("IP", help="The IP to test")
     parser.add_argument("HOSTNAME", help="The IP to test")
     parser.add_argument('--cidr_file', type=str, action='store', help="Path to file containing CIDRs in scope.")
     parser.add_argument('--f_discard', type=str, action='store', help="Write all IPs that are out of scope to this file.")
+    parser.add_argument('--f_keep', type=str, action='store',
+                        help="Write all IPs that are in scope to this file.")
     parser.add_argument('--debug', action='store_true', help='Enable debugging')
     
     # file mode
@@ -61,6 +62,7 @@ if __name__ == "__main__":
     if len(multiple_IPs) > 1:
         logging.debug(f"{Fore.YELLOW}{args.HOSTNAME.strip()} resolves to multiple IPs: {', '.join(multiple_IPs)}")
     discarded = []
+    keep = []
     for ip in multiple_IPs:
         with open(args.cidr_file, "r") as f:
             cidrs = f.readlines()
@@ -68,14 +70,17 @@ if __name__ == "__main__":
                 if c == "":
                     continue
                 if cidr_test(c.strip(),ip):
-                    logging.info(f"{Fore.GREEN}{args.HOSTNAME.strip()}{Style.RESET_ALL}")
+                    logging.info(f"{Fore.GREEN}{ip}\t{args.HOSTNAME.strip()}{Style.RESET_ALL}")
+                    if args.f_keep is not None:
+                        with open(args.f_keep, "a") as f_keep:
+                            f_keep.write(f"{ip},{args.HOSTNAME.strip()}\n")
                     sys.exit(0)
             # IP is in none of the in-scope CIDRs
             logging.debug(f"{Fore.RED}[-] Domain {args.HOSTNAME.strip()} not in scope (IP: {ip}){Style.RESET_ALL}")
-            discarded.append(ip)
+            discarded.append((ip, args.HOSTNAME.strip()))
     
     if args.f_discard is not None:
         logging.debug(f"{Fore.YELLOW}Writing {len(discarded)} out-of-scope IP(s) to {args.f_discard}.{Style.RESET_ALL}")
         with open(args.f_discard, "a") as f_discard:
-            f_discard.writelines(ip + '\n' for ip in discarded)
+            f_discard.writelines(f'{d[0]},{d[1]}\n' for d in discarded)
             
