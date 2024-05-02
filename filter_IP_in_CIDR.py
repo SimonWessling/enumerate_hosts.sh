@@ -4,6 +4,9 @@ import logging
 from colorama import init as colorama_init
 from colorama import Fore
 from colorama import Style
+import whois
+import csv
+
 
 def cidr_test(cidr_a, cidr_b):
     """ stolen from https://gist.github.com/magnetikonline/686fde8ee0bce4d4930ce8738908a009"""
@@ -34,12 +37,15 @@ def cidr_test(cidr_a, cidr_b):
 
     return prefix_a.startswith(prefix_b) or prefix_b.startswith(prefix_a)
 
+def get_whois(ip):
+    w = whois.whois(ip)
+    return w.registrar, w.org
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test if a given IP is in the given CIDR range. Echoes back the IP if it is in the CIDR range, does nothing if not.")
     parser.add_argument("IP", help="The IP to test")
     parser.add_argument("HOSTNAME", help="The IP to test")
-    parser.add_argument('--cidr_file', type=str, action='store', help="Path to file containing CIDRs in scope.")
+    parser.add_argument('--cidr_file', type=str, action='store', help="Path to file containing CIDRs in scope.", required=True)
     parser.add_argument('--f_discard', type=str, action='store', help="Write all IPs that are out of scope to this file.")
     parser.add_argument('--f_keep', type=str, action='store',
                         help="Write all IPs that are in scope to this file.")
@@ -61,26 +67,30 @@ if __name__ == "__main__":
     multiple_IPs = args.IP.split("\n")
     if len(multiple_IPs) > 1:
         logging.debug(f"{Fore.YELLOW}{args.HOSTNAME.strip()} resolves to multiple IPs: {', '.join(multiple_IPs)}")
-    discarded = []
-    keep = []
-    for ip in multiple_IPs:
-        with open(args.cidr_file, "r") as f:
-            cidrs = f.readlines()
-            for c in cidrs:
-                if c == "":
-                    continue
-                if cidr_test(c.strip(),ip):
-                    logging.info(f"{Fore.GREEN}{ip}\t{args.HOSTNAME.strip()}{Style.RESET_ALL}")
-                    if args.f_keep is not None:
-                        with open(args.f_keep, "a") as f_keep:
-                            f_keep.write(f"{ip},{args.HOSTNAME.strip()}\n")
-                    sys.exit(0)
-            # IP is in none of the in-scope CIDRs
-            logging.debug(f"{Fore.RED}[-] Domain {args.HOSTNAME.strip()} not in scope (IP: {ip}){Style.RESET_ALL}")
-            discarded.append((ip, args.HOSTNAME.strip()))
-    
-    if args.f_discard is not None:
-        logging.debug(f"{Fore.YELLOW}Writing {len(discarded)} out-of-scope IP(s) to {args.f_discard}.{Style.RESET_ALL}")
-        with open(args.f_discard, "a") as f_discard:
-            f_discard.writelines(f'{d[0]},{d[1]}\n' for d in discarded)
+    in_scope = False
+    # assuming all the domain's IPs belong to the same registrar (i.e. if the first IP is in scope, then the others are also in scope and vice versa)
+    ip = multiple_IPs[0]
+    registrar, org = get_whois(ip)
+    with open(args.cidr_file, "r") as f:
+        cidrs = f.readlines()
+        for c in cidrs:
+            if c == "":
+                continue
+            if cidr_test(c.strip(),ip):
+                in_scope = True
+                logging.info(f"{Fore.GREEN}{ip}\t{args.HOSTNAME.strip()}{Style.RESET_ALL}")
+                break
             
+    if in_scope:
+        if not args.f_keep:
+            print("exit")
+            sys.exit(0)
+        output_file = args.f_keep
+    else:
+        logging.debug(f"{Fore.RED}[-] Domain {args.HOSTNAME.strip()} not in scope (IP: {','.join(multiple_IPs)}). Writing to {args.f_discard}.{Style.RESET_ALL}")
+        output_file = args.f_discard
+    
+    with open(output_file, "a") as f_output:
+        logging.debug(output_file)
+        csv_writer = csv.writer(f_output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        csv_writer.writerow([args.HOSTNAME.strip(), args.IP.strip(), registrar, org])
