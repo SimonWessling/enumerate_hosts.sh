@@ -23,7 +23,7 @@ def validate_CIDRS(input_cidr_filepath):
         logging.debug(f"Reading CIDR file {f_cidr.name}")
         cidrs = f_cidr.readlines()
         if len(cidrs) == 0:
-            logging.error("File is empty")
+            logging.error("CIDR file is empty")
             sys.exit(-1)
         logging.debug(f"Loaded CIDRs: {cidrs}")
         for cidr in cidrs:
