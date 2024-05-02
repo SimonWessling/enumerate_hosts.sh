@@ -4,8 +4,9 @@ import logging
 from colorama import init as colorama_init
 from colorama import Fore
 from colorama import Style
-import whois
 import csv
+import subprocess
+import re
 
 
 def cidr_test(cidr_a, cidr_b):
@@ -38,8 +39,25 @@ def cidr_test(cidr_a, cidr_b):
     return prefix_a.startswith(prefix_b) or prefix_b.startswith(prefix_a)
 
 def get_whois(ip):
-    w = whois.whois(ip)
-    return w.registrar, w.org
+    res = subprocess.check_output(f"whois {ip}", shell=True).decode("utf-8", "backslashreplace") # not command-injection-safe
+    if match := re.search("cidr: *(.*)\n", res, re.IGNORECASE):
+        ip_range = match.group(1)
+        logging.debug(f"Found whois cidr {ip_range}")
+    elif match := re.search("inetnum: *(.*)\n", res, re.IGNORECASE):
+        ip_range = match.group(1)
+        logging.debug(f"Found whois ip range {ip_range}")
+    
+    if match := re.search("org(?:-|_| )?name: *(.*)\n", res, re.IGNORECASE):
+        org = match.group(1)
+        logging.debug(f"Found whois org name {org}")
+    elif match := re.search("descr: *(.*)\n", res, re.IGNORECASE):
+        org = match.group(1)
+        logging.debug(f"Found whois descr {org}")
+    elif match := re.search("netname: *(.*)\n", res, re.IGNORECASE):
+        org = match.group(1)
+        logging.debug(f"Found whois netname {org}")
+        
+    return ip_range, org
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test if a given IP is in the given CIDR range. Echoes back the IP if it is in the CIDR range, does nothing if not.")
@@ -64,9 +82,11 @@ if __name__ == "__main__":
         # could not be resolved
         logging.debug(f"{Fore.YELLOW}{args.HOSTNAME.strip()} could not be resolved.{Style.RESET_ALL}")
         sys.exit(0)
+    
     multiple_IPs = args.IP.split("\n")
     if len(multiple_IPs) > 1:
         logging.debug(f"{Fore.YELLOW}{args.HOSTNAME.strip()} resolves to multiple IPs: {', '.join(multiple_IPs)}")
+    
     in_scope = False
     # assuming all the domain's IPs belong to the same registrar (i.e. if the first IP is in scope, then the others are also in scope and vice versa)
     ip = multiple_IPs[0]
