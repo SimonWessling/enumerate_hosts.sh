@@ -83,7 +83,6 @@ if __name__ == "__main__":
             
     if in_scope:
         if not args.f_keep:
-            print("exit")
             sys.exit(0)
         output_file = args.f_keep
     else:
@@ -91,6 +90,5 @@ if __name__ == "__main__":
         output_file = args.f_discard
     
     with open(output_file, "a") as f_output:
-        logging.debug(output_file)
         csv_writer = csv.writer(f_output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         csv_writer.writerow([args.HOSTNAME.strip(), args.IP.strip(), registrar, org])
