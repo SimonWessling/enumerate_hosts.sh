@@ -140,6 +140,12 @@ ip=$(echo "$domain" | dnsx -silent -resolver 8.8.8.8,8.8.4.4 -a -resp-only);
 python $SCRIPTPATH/filter_IP_in_CIDR.py --debug --f_keep ~/$TARGET/${timestamp}_discovered_in_scope.csv --f_discard ~/$TARGET/${timestamp}_discovered_out_of_scope_IPs.csv --cidr_file ~/$TARGET/cidr.txt "$ip" "$domain";
 done
 
+## collect all
+if [ ! -f $collection_file ]; then
+	touch $collection_file
+fi
+cat $collection_file $current_run_final_file | sort -u -o $collection_file
+	
 # version sort for correct IP sorting
 #TODO combine from other runs
 sort -V -o ~/$TARGET/${timestamp}_discovered_out_of_scope_IPs.csv > ~/$TARGET/${timestamp}_discovered_out_of_scope_IPs.csv
