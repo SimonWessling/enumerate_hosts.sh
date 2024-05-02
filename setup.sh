@@ -7,12 +7,12 @@ sudo apt install jq hosthunter dnsx httpx-toolkit
 #git clone https://github.com/SpiderLabs/HostHunter.git
 if [ ! -f ${TOOLS}/amass_v3.22.1/amass ]; then
 	printf "Installing amass\n"
-	curl -L -o ~/Downloads/amass_linux_amd64.zip https://github.com/owasp-amass/amass/releases/download/v3.22.1/amass_linux_amd64.zip
+	curl -L -o /tmp/amass_linux_amd64.zip https://github.com/owasp-amass/amass/releases/download/v3.22.1/amass_linux_amd64.zip
 	mkdir -p ${TOOLS}/amass_v3.22.1
-	unzip -d ${TOOLS}/amass_v3.22.1 ~/Downloads/amass_linux_amd64.zip
+	unzip -d ${TOOLS}/amass_v3.22.1 /tmp/amass_linux_amd64.zip
 	mv ${TOOLS}/amass_v3.22.1/amass_linux_amd64/* ${TOOLS}/amass_v3.22.1/
 	rmdir ${TOOLS}/amass_v3.22.1/amass_linux_amd64
-	rm ~/Downloads/amass_linux_amd64.zip
+	rm /tmp/amass_linux_amd64.zip
 else
 	printf "${TOOLS}/amass_v3.22.1 exists\n"
 fi
