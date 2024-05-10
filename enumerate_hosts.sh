@@ -46,7 +46,7 @@ if [ $? -ne 0 ]; then
 	echo "Aborted."
 fi
 
-timestamp="$(date +%s)"
+timestamp="$(date +%F_%H:%M:%S)"
 collection_file=~/$TARGET/domains.txt # append-only file to collect domains discovered across iterative script runs
 current_run_final_file="${timestamp}_domains.txt" # output of domains discovered during the current run
 
@@ -126,7 +126,7 @@ if [ "$DO_HOSTHUNTER" = true ]; then
 	
 else
 	printf "Skipping HostHunter (DO_HOSTHUNTER = $DO_HOSTHUNTER)\n\n"
-	touch ~/TARGET/HostHunter/${timestamp}_hosthunter.txt # create empty file for next steps
+	touch ~/$TARGET/HostHunter/${timestamp}_hosthunter.txt # create empty file for next steps
 fi
 
 ## create final subdomain list
@@ -148,17 +148,18 @@ cat $collection_file $current_run_final_file | sort -u -o $collection_file
 	
 # version sort for correct IP sorting
 #TODO combine from other runs
-sort -V -o ~/$TARGET/${timestamp}_discovered_out_of_scope_IPs.csv > ~/$TARGET/${timestamp}_discovered_out_of_scope_IPs.csv
+sort -V -o ~/$TARGET/${timestamp}_discovered_out_of_scope_IPs.csv ~/$TARGET/${timestamp}_discovered_out_of_scope_IPs.csv
 sort -V -o ~/$TARGET/${timestamp}_discovered_in_scope.csv ~/$TARGET/${timestamp}_discovered_in_scope.csv
 
 ## alive HTTP(S) and screenshots
 printf "${COLOR_BLUE_BOLD}%s${COLOR_END}\n" "############### Probe alive HTTP(S)"
 if [ "$PROBE_ALIVE" = true ]; then
-	mkdir ~/TARGET/screenshots
-	httpx-toolkit -list $current_run_final_file -silent -probe -o ~/$TARGET/${timestamp}_alive_hosts.txt # -screenshot -srd ~/${TARGET}/screenshots
+	mkdir ~/$TARGET/screenshots
+	grep -oP '^.*?(?=,|$)' ~/$TARGET/${timestamp}_discovered_in_scope.csv | httpx-toolkit -silent -probe -ports 80,443,8080,8443 -ip -o ~/$TARGET/${timestamp}_alive_hosts.csv  2>&1 1>/dev/null
+	# TODO screenshots
 else
 	printf "Not probing alive hosts (PROBE_ALIVE = $PROBE_ALIVE)\n\n"
-	touch ~/$TARGET/${timestamp}_alive_hosts.txt # create empty file for next steps
+	touch ~/$TARGET/${timestamp}_alive_webhosts.txt # create empty file for next steps
 fi
 
 # TODO
