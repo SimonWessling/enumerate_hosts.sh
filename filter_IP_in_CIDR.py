@@ -22,7 +22,7 @@ def cidr_test(cidr_a, cidr_b):
 
     def address_to_bits(address):
         # convert each octet of IP address to binary
-        bit_list = [bin(int(part)) for part in address.split(".")]  
+        bit_list = [bin(int(part)) for part in address.split(".")]
 
         # join binary parts together
         # note: part[2:] to slice off the leading "0b" from bin() results
@@ -62,9 +62,9 @@ def get_whois(ip):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test if a given IP is in the given CIDR range. Echoes back the IP if it is in the CIDR range, does nothing if not.")
     parser.add_argument("IP", help="The IP to test")
-    parser.add_argument("HOSTNAME", help="The IP to test")
+    parser.add_argument("HOSTNAME", help="The domain which resolves to the IP (for recording/logging purposes)")
     parser.add_argument('--cidr_file', type=str, action='store', help="Path to file containing CIDRs in scope.", required=True)
-    parser.add_argument('--f_discard', type=str, action='store', help="Write all IPs that are out of scope to this file.")
+    parser.add_argument('--f_discard', type=str, action='store', help="Write all IPs that are out of scope to this file.", required=True)
     parser.add_argument('--f_keep', type=str, action='store',
                         help="Write all IPs that are in scope to this file.")
     parser.add_argument('--debug', action='store_true', help='Enable debugging')
@@ -96,12 +96,11 @@ if __name__ == "__main__":
         for c in cidrs:
             if c == "":
                 continue
-            if cidr_test(c.strip(),ip):
+            if c = "*" or cidr_test(c.strip(),ip):
                 in_scope = True
-                logging.info(f"{Fore.GREEN}{ip}\t{args.HOSTNAME.strip()}{Style.RESET_ALL}")
                 break
-            
     if in_scope:
+        logging.info(f"{Fore.GREEN}{ip}\t{args.HOSTNAME.strip()}{Style.RESET_ALL}")
         if not args.f_keep:
             sys.exit(0)
         output_file = args.f_keep

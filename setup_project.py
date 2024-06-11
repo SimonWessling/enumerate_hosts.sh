@@ -28,6 +28,8 @@ def validate_CIDRS(input_cidr_filepath):
         logging.debug(f"Loaded CIDRs: {cidrs}")
         for cidr in cidrs:
             cidr = cidr.strip()
+            if cidr == "":
+                continue
             # Validate CIDRs and then write to a file inside the project
             if cidr[-3] != "/":
                 logging.error(f"Error loading CIDRs from {cidr_filepath}. Invalid CIDR {cidr}.")
@@ -97,6 +99,7 @@ if __name__ == "__main__":
         os.mkdir(os.path.join(args.DIRECTORY, "amass"))
         os.mkdir(os.path.join(args.DIRECTORY, "HostHunter"))
         os.mkdir(os.path.join(args.DIRECTORY, "dnsx-bruteforce"))
+        os.mkdir(os.path.join(args.DIRECTORY, "screenshots"))
 
     ### Get CIDR file, validate CIDRs and create a file of CIDRs inside the project directory (i.e. "copy" to project)
     if is_iterative_run:

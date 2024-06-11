@@ -154,8 +154,8 @@ sort -V -o ~/$TARGET/${timestamp}_discovered_in_scope.csv ~/$TARGET/${timestamp}
 ## alive HTTP(S) and screenshots
 printf "${COLOR_BLUE_BOLD}%s${COLOR_END}\n" "############### Probe alive HTTP(S)"
 if [ "$PROBE_ALIVE" = true ]; then
-	mkdir ~/$TARGET/screenshots
 	grep -oP '^.*?(?=,|$)' ~/$TARGET/${timestamp}_discovered_in_scope.csv | httpx-toolkit -silent -probe -ports 80,443,8080,8443 -ip -o ~/$TARGET/${timestamp}_alive_hosts.csv  2>&1 1>/dev/null
+	# grep 'SUCCESS' ~/zf.com/2024-05-10_16:23:53_alive_hosts.csv | awk '{print $3,$1}' | tr -d '[]' | tr ' ' ',' | srot -uV
 	# TODO screenshots
 else
 	printf "Not probing alive hosts (PROBE_ALIVE = $PROBE_ALIVE)\n\n"
@@ -165,3 +165,4 @@ fi
 # TODO
 #cat alive_hosts.txt | waybackurls
 
+printf "${COLOR_BLUE_BOLD}%s${COLOR_END}\n" "############### Done."
