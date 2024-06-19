@@ -109,5 +109,5 @@ if __name__ == "__main__":
         output_file = args.f_discard
     
     with open(output_file, "a") as f_output:
-        csv_writer = csv.writer(f_output, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        csv_writer = csv.writer(f_output, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
         csv_writer.writerow([args.HOSTNAME.strip(), args.IP.strip(), registrar, org])
