@@ -49,7 +49,7 @@ fi
 
 timestamp="$(date +%F_%H:%M:%S)"
 collection_file=~/$TARGET/domains.txt # append-only file to collect domains discovered across iterative script runs
-current_run_final_file="${timestamp}_domains.txt" # output of domains discovered during the current run
+current_run_final_file=~/$TARGET/${timestamp}_domains.txt # output of domains discovered during the current run
 
 # check if this is an iterative run -> keep final list of domains from last run
 if [ -f $collection_file ]; then
