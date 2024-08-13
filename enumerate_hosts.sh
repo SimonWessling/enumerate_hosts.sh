@@ -5,6 +5,7 @@ AMASS_ACTIVE='-active -p 443,80,8080,8008,8443' # attempts zone transfer and cer
 AMASS=~/tools/amass_v3.22.1/amass
 WORDLISTS=~/tools/wordlists
 DO_HOSTHUNTER=true
+DNSX_NUM_RETRIES=3
 PROBE_ALIVE=true
 MAX_IPS=32
 
@@ -78,7 +79,7 @@ for i in 00 01 02 03 04; do
 		printf "${COLOR_RED}%s${COLOR_END}\n" "Wordlist not found: $wordlist. Did you run setup.sh?" # dnsx doesn't throw an error if file is not found, need to check explicitly
 		exit -1
 	fi
-	dnsx -silent -resolver 8.8.8.8,8.8.4.4 -retry 3 -a -d "$TARGET" -w "$wordlist" | tee -a ~/$TARGET/dnsx-bruteforce/${timestamp}_from_best-dns-wordlist.txt
+	dnsx -silent -resolver 8.8.8.8,8.8.4.4 -retry $DNSX_NUM_RETRIES -a -d "$TARGET" -w "$wordlist" | tee -a ~/$TARGET/dnsx-bruteforce/${timestamp}_from_best-dns-wordlist.txt
 	printf "${COLOR_END}"
 done
 
@@ -139,6 +140,10 @@ cat $current_run_final_file \
 ip=$(echo "$domain" | dnsx -silent -resolver 8.8.8.8,8.8.4.4 -a -resp-only);
 python $SCRIPTPATH/filter_IP_in_CIDR.py --debug --f_keep ~/$TARGET/${timestamp}_discovered_in_scope.csv --f_discard ~/$TARGET/${timestamp}_discovered_out_of_scope_IPs.csv --cidr_file ~/$TARGET/cidr.txt "$ip" "$domain";
 done
+# if no domains were in scope, the in_scope.csv does not exist -> create it
+if [ ! -f ~/$TARGET/${timestamp}_discovered_in_scope.csv ]; then
+	touch -f ~/$TARGET/${timestamp}_discovered_in_scope.csv
+fi
 
 ## collect all
 if [ ! -f $collection_file ]; then
@@ -154,7 +159,7 @@ sort -V -o ~/$TARGET/${timestamp}_discovered_in_scope.csv ~/$TARGET/${timestamp}
 ## alive HTTP(S) and screenshots
 printf "${COLOR_BLUE_BOLD}%s${COLOR_END}\n" "############### Probe alive HTTP(S)"
 if [ "$PROBE_ALIVE" = true ]; then
-	grep -oP '^.*?(?=,|$)' ~/$TARGET/${timestamp}_discovered_in_scope.csv | httpx-toolkit -silent -probe -ports 80,443,8080,8443 -ip -o ~/$TARGET/${timestamp}_alive_hosts.csv  2>&1 1>/dev/null
+	grep -oP '^.*?(?=,|$)' ~/$TARGET/${timestamp}_discovered_in_scope.csv | tr -d '"' | httpx-toolkit -silent -probe -nf -ip -o ~/$TARGET/${timestamp}_alive_hosts.csv  2>&1 1>/dev/null
 	# grep 'SUCCESS' ~/zf.com/2024-05-10_16:23:53_alive_hosts.csv | awk '{print $3,$1}' | tr -d '[]' | tr ' ' ',' | srot -uV
 	# TODO screenshots
 else
