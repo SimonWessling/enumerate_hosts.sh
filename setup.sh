@@ -3,7 +3,7 @@ TOOLS=~/tools
 WORDLISTS="${TOOLS}/wordlists"
 
 set -e
-sudo apt install jq hosthunter dnsx httpx-toolkit
+sudo apt install bc jq hosthunter dnsx httpx-toolkit
 #git clone https://github.com/SpiderLabs/HostHunter.git
 if [ ! -f ${TOOLS}/amass_v3.22.1/amass ]; then
 	printf "Installing amass\n"

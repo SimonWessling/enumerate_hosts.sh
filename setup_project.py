@@ -8,6 +8,8 @@ import shutil
 
 def cidrs_to_IP_list(cidrs):
     ips = []
+    if cidrs == ["*"]:
+        return ["*"]
     for cidr in cidrs:
         ips_for_cidr = [str(ip) for ip in ipaddress.IPv4Network(cidr.strip()) if not str(ip).endswith(".0") and not str(ip).endswith(".255")]
         if len(ips_for_cidr) > 255:
@@ -30,7 +32,8 @@ def validate_CIDRS(input_cidr_filepath):
             cidr = cidr.strip()
             if cidr == "":
                 continue
-            # Validate CIDRs and then write to a file inside the project
+            if cidr == "*":
+               return ["*"] 
             if cidr[-3] != "/":
                 logging.error(f"Error loading CIDRs from {cidr_filepath}. Invalid CIDR {cidr}.")
                 sys.exit(-1)
@@ -50,7 +53,7 @@ def filter_IPs_from_file(ip_input_filepath, ips_in_scope):
         logging.debug(f"Known IPs{' (truncated)' if len(known_IPs) > 20 else ''}: {known_IPs[:20]}")
         for known_IP in known_IPs:
             known_IP = known_IP.strip()
-            if known_IP in ips_in_scope:
+            if known_IP in ips_in_scope or ips_in_scope == ["*"]:
                 in_scope_IPs.append(known_IP)
             else:
                 out_of_scope_IPs.append(known_IP)
@@ -122,20 +125,30 @@ if __name__ == "__main__":
     
     # store list of valid CIDRs in current directory
     valid_CIDRs = validate_CIDRS(cidr_input_file_path)
+    wildcard_scope = False
+    if valid_CIDRs == ["*"]:
+        wildcard_scope = True
+        logging.warning("Using wildcard scope! No IP filtering.")
     with open(project_cidr_file_path, "w") as f_cidr_output:
         f_cidr_output.writelines(cidr + '\n' for cidr in valid_CIDRs)
         logging.info(f"Wrote a total of {len(valid_CIDRs)} valid CIDRs to {f_cidr_output.name}.")
     
     # convert valid CIDRs to full list of in-scope IPs and store them in the project folder 
     # (required for programs that do not support CIDR notation)
-    ips_for_valid_CIDRs = cidrs_to_IP_list(valid_CIDRs)
+    if wildcard_scope:
+        ips_for_valid_CIDRs = ["*"]
+    else:
+        ips_for_valid_CIDRs = cidrs_to_IP_list(valid_CIDRs)
+    
     with open(project_inscope_IPs_file_path, "w") as f_IPs:
         f_IPs.writelines(ip + '\n' for ip in ips_for_valid_CIDRs)
         logging.info(f"Wrote a total of {len(ips_for_valid_CIDRs)} IPs to {f_IPs.name} for a total of {len(valid_CIDRs)} CIDRs.")
-
+        
     # validate that the known IPs fall into the scope and store the in the project folder
     if known_IPs_input_file_path:
         known_in_scope_IPs, out_of_scope_IPs = filter_IPs_from_file(known_IPs_input_file_path, ips_for_valid_CIDRs) # TODO store out-of-scope IPs
+        if wildcard_scope:
+            assert out_of_scope_IPs == []
         with open(known_and_filtered_IPs_output_file_path, "w") as f_filtered_IPs:
             f_filtered_IPs.writelines(ip + '\n' for ip in known_in_scope_IPs)
             logging.info(f"Wrote a total of {len(known_in_scope_IPs)} known in-scope IPs to {f_filtered_IPs.name}. "
@@ -144,14 +157,16 @@ if __name__ == "__main__":
     ### Write amass config
     logging.debug(f"Writing amass config to {args.DIRECTORY}/amass")
     with open(os.path.join(args.DIRECTORY, "amass", "config.yml"), "w") as f_amass:
-        f_amass.write(f"scope:\n")
-        f_amass.write(f"    ips:\n")
-        for ip in ips_for_valid_CIDRs:
-            f_amass.write(f"        - {ip}\n")
+        if not wildcard_scope:
+            f_amass.write(f"scope:\n")
+            f_amass.write(f"    ips:\n")
+            for ip in ips_for_valid_CIDRs:
+                f_amass.write(f"        - {ip}\n")
 
     # write legacy amass config
     with open(os.path.join(args.DIRECTORY, "amass", "config.ini"), "w") as f_amass_legacy:
         f_amass_legacy.write("[data_sources]\n\n")
-        f_amass_legacy.write("[scope]\n")
-        for c in valid_CIDRs:
-            f_amass_legacy.write(f"cidr={c}\n")
+        if not wildcard_scope:
+            f_amass_legacy.write("[scope]\n")
+            for c in valid_CIDRs:
+                f_amass_legacy.write(f"cidr={c}\n")

@@ -94,9 +94,10 @@ if __name__ == "__main__":
     with open(args.cidr_file, "r") as f:
         cidrs = f.readlines()
         for c in cidrs:
+            c = c.strip()
             if c == "":
                 continue
-            if c = "*" or cidr_test(c.strip(),ip):
+            if c == "*" or cidr_test(c,ip):
                 in_scope = True
                 break
     if in_scope:
@@ -110,4 +111,4 @@ if __name__ == "__main__":
     
     with open(output_file, "a") as f_output:
         csv_writer = csv.writer(f_output, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
-        csv_writer.writerow([args.HOSTNAME.strip(), args.IP.strip(), registrar, org])
+        csv_writer.writerow([args.HOSTNAME.strip(), ','.join(multiple_IPs), registrar, org])
