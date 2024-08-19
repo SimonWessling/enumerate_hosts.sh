@@ -82,8 +82,8 @@ if __name__ == "__main__":
         if i == "y":
             shutil.rmtree(args.DIRECTORY, ignore_errors=True)
         else:
-            i = input(f"Start an iterative run instead using the information in the directory (y/n)? [n]: ")
-            if i == "y":
+            i = input(f"Start an iterative run instead using the information in the directory (y/n)? [y]: ")
+            if i == "y" or i == "":
                 is_iterative_run = True
                 if not os.path.isfile(project_cidr_file_path):
                     logging.error(f"Tried to start an iterative run, but required CIDR file {project_cidr_file_path} was not found.")
